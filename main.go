@@ -1,96 +1,44 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
-	"os"
-	"os/exec"
 )
 
 type (
-	Pipe struct {
-		cmds []*exec.Cmd
-	}
-
-	ConfigDirs struct {
-		Path
-	}
-
-	Config struct {
+	Suite struct {
+		Dirs []string `json:"dirs"`
+		Exts []string `json:"exts"`
+		Cmds []string `json:"cmds"`
+		Src  string   `json:"src"`
+		Dest string   `json:"dest"`
 	}
 )
 
 func main() {
-	// cat := exec.Command("cat", "file.txt")
-	// stdout, _ := cat.StdoutPipe()
-
-	// grep := exec.Command("grep", "flld")
-	// grep.Stdin = stdout
-	// grep.Stdout = os.Stdout
-
-	// cat.Start()
-	// grep.Start()
-	// cat.Wait()
-	// grep.Wait()
-
-	p, err := NewPipe(
-		exec.Command("cat", "file.txt"),
-		exec.Command("grep", "flld"),
-		exec.Command("grep", "sfds"),
-	)
-
+	jsonBlob := []byte(`
+	[
+		{
+			"dirs": ["/path/to/dir", "/home/ali"],
+			"exts": ["php", "css"],
+			"cmds": ["browserify"],
+			"src" : "main.js",
+			"dest": "dest.js"
+		},
+		{
+			"dirs": ["/", "/usr"],
+			"exts": ["bat", "bin"],
+			"cmds": ["cat"],
+			"src" : "main.sh",
+			"dest": "dest.sh"
+		}
+	]
+	`)
+	var conf []Suite
+	err := json.Unmarshal(jsonBlob, &conf)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	if err := p.Exec(); err != nil {
-		log.Fatal(err)
-	}
-	if err := p.Exec(); err != nil {
-		log.Fatal("Rerun1: ", err)
-	}
-	if err := p.Exec(); err != nil {
-		log.Fatal(err)
-	}
-	if err := p.Exec(); err != nil {
-		log.Fatal(err)
-	}
-}
-
-func NewPipe(cmds ...*exec.Cmd) (*Pipe, error) {
-
-	p := &Pipe{
-		cmds: cmds,
-	}
-
-	var lcmd *exec.Cmd
-	for _, cmd := range p.cmds {
-		if lcmd != nil {
-			if stdout, err := lcmd.StdoutPipe(); err == nil {
-				cmd.Stdin = stdout
-			} else {
-				return nil, err
-			}
-		}
-		lcmd = cmd
-	}
-	lcmd.Stdout = os.Stdout
-
-	return p, nil
-}
-
-func (p *Pipe) Exec() error {
-
-	for _, cmd := range p.cmds {
-		if err := cmd.Start(); err != nil {
-			return err
-		}
-	}
-
-	for _, cmd := range p.cmds {
-		if err := cmd.Wait(); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	fmt.Printf("%v", conf)
 }
