@@ -66,21 +66,3 @@ func main() {
 		trans = append(trans, t)
 	}
 }
-
-func getTransmitter(s *Suite) (*sniffy.EventTransmitter, error) {
-	if len(s.Dirs) == 0 {
-		return nil, ErrNoDirProvided
-	}
-	var filters []sniffy.Filter
-
-	filters = append(filters, sniffy.PathFilter(s.Dirs...))
-
-	if len(s.Exts) > 0 {
-		filters = append(filters, sniffy.ExtFilter(s.Exts...))
-	}
-	return &sniffy.Transmitter(filters...), nil
-}
-
-func getSuites() []*Suite {
-	// Turn paths to absolute paths include Suite.Src and Suite.Dest
-}
