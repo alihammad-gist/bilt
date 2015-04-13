@@ -52,15 +52,15 @@ func main() {
 	// watching for events
 	var trans []*sniffy.EventTransmitter
 	for _, s := range suites {
-		t, err := getTransmitter(s)
+		t, err := s.Transmitter()
 		if err != nil {
 			log.Fatal(err)
 		}
 		go func() {
 			for e := range t.Events {
-				// TODO:
-				// Set Suite.Root to os/exec.Cmd.Dir (if not empty)
-				//
+				if err := s.Exec(); err != nil {
+					log.Println(err)
+				}
 			}
 		}()
 		trans = append(trans, t)
