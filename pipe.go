@@ -1,19 +1,11 @@
 package main
 
 import (
-	"errors"
 	"io"
 	"os/exec"
 )
 
-var (
-	ErrTooFewCmds = errors.New("Function pipe expects at least two commands")
-)
-
-func Pipe(w io.Writer, cmds ...*exec.Cmd) error {
-	if len(cmds) < 2 {
-		return ErrTooFewCmds
-	}
+func Pipe(r io.Reader, w io.Writer, cmds ...*exec.Cmd) error {
 
 	var lcmd *exec.Cmd
 	for _, cmd := range cmds {
@@ -26,6 +18,8 @@ func Pipe(w io.Writer, cmds ...*exec.Cmd) error {
 			if err := lcmd.Start(); err != nil {
 				return err
 			}
+		} else {
+			cmd.Stdin = r
 		}
 		lcmd = cmd
 	}

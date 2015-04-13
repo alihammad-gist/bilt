@@ -1,9 +1,9 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
 	"log"
+	"os"
+	"os/exec"
 )
 
 type (
@@ -16,29 +16,39 @@ type (
 	}
 )
 
+/*
+[
+	{
+		"dirs": ["/path/to/dir", "/home/ali"],
+		"exts": ["php", "css"],
+		"cmds": ["browserify"],
+		"src" : "main.js",
+		"dest": "dest.js"
+	},
+	{
+		"dirs": ["/", "/usr"],
+		"exts": ["bat", "bin"],
+		"cmds": ["cat"],
+		"src" : "main.sh",
+		"dest": "dest.sh"
+	}
+]
+*/
+
 func main() {
-	jsonBlob := []byte(`
-	[
-		{
-			"dirs": ["/path/to/dir", "/home/ali"],
-			"exts": ["php", "css"],
-			"cmds": ["browserify"],
-			"src" : "main.js",
-			"dest": "dest.js"
-		},
-		{
-			"dirs": ["/", "/usr"],
-			"exts": ["bat", "bin"],
-			"cmds": ["cat"],
-			"src" : "main.sh",
-			"dest": "dest.sh"
-		}
-	]
-	`)
-	var conf []Suite
-	err := json.Unmarshal(jsonBlob, &conf)
+	f, err := os.Open("file.txt")
+	defer f.Close()
+
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("%v", conf)
+	err = Pipe(
+		f,
+		os.Stdout,
+		exec.Command("grep", "asd"),
+		exec.Command("grep", ";"),
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
