@@ -1,39 +1,48 @@
 package main
 
 import (
+	"errors"
 	"io"
 	"os/exec"
 )
 
-func Pipe(r io.Reader, w io.Writer, cmds ...*exec.Cmd) error {
+var (
+	ErrNoCommandsProvided = errors.New("No commands were provided")
+)
 
-	var lcmd *exec.Cmd
-	for _, cmd := range cmds {
-		if lcmd != nil {
-			if stdout, err := lcmd.StdoutPipe(); err == nil {
-				cmd.Stdin = stdout
-			} else {
-				errlogger.Fatal(err)
+func Pipe(in io.Reader, out io.Writer, cmds ...*exec.Cmd) error {
+	if len(cmds) == 0 {
+		return ErrNoCommandsProvided
+	}
+
+	// setting stdin and out
+	cmds[0].Stdin = in
+	cmds[len(cmds)-1].Stdout = out
+
+	for i, _ := range cmds {
+		if cmds[i].Stdin == nil {
+			pout, err := cmds[i-1].StdoutPipe()
+			if err != nil {
+				return err
 			}
-			if err := lcmd.Start(); err != nil {
-				errlogger.Fatal(err)
-			}
-		} else {
-			cmd.Stdin = r
+			cmds[i].Stdin = pout
 		}
-		lcmd = cmd
 	}
 
-	lcmd.Stdout = w
-	if err := lcmd.Start(); err != nil {
-		errlogger.Fatal(err)
+	// starting
+	for i, _ := range cmds {
+		if err := cmds[i].Start(); err != nil {
+			return err
+		}
 	}
 
-	for _, cmd := range cmds {
-		if err := cmd.Wait(); err != nil {
-			errlogger.Fatal(err)
+	// waiting
+	for i, _ := range cmds {
+		if err := cmds[i].Wait(); err != nil {
+			return err
 		}
 	}
 
 	return nil
+
 }

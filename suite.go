@@ -19,7 +19,10 @@ var (
 )
 
 // Looks if config file is passed as argument in the command-line
-// or if it is present in current working directory
+// or if it is present in current working directory, If none it will return
+// an error. First returned value is nil if error isn't
+//
+// If there is error Unmarshalling json, error will be returned.
 func Suites() ([]*Suite, error) {
 	var (
 		suites []*Suite
@@ -88,10 +91,11 @@ func AbsPaths(s *Suite) error {
 		if err != nil {
 			return err
 		}
-		s.Dest, err = filepath.Abs(s.Dest)
+		pwd, err := os.Getwd()
 		if err != nil {
 			return err
 		}
+		s.Dest = filepath.Join(pwd, s.Dest)
 	} else {
 		s.Src = filepath.Join(s.Root, s.Src)
 		s.Dest = filepath.Join(s.Root, s.Dest)
@@ -115,7 +119,7 @@ func (s *Suite) Exec() error {
 	}
 	defer r.Close()
 
-	w, err := os.OpenFile(s.Dest, os.O_WRONLY, 0666)
+	w, err := os.Create(s.Dest)
 	if err != nil {
 		return err
 	}
