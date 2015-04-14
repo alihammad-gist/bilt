@@ -8,12 +8,14 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/alihammad-gist/sniffy"
 )
 
 var (
 	ErrNoDirProvided = errors.New("Suite doesn't have any directories")
+	ErrNoSrcOrDest   = errors.New("Dest or source not provided for one of the suites")
 )
 
 // Looks if config file is passed as argument in the command-line
@@ -31,7 +33,7 @@ func Suites() ([]*Suite, error) {
 			return nil, err
 		}
 	} else {
-		d, err = ioutil.ReadFile("bilt.json")
+		d, err = ioutil.ReadFile(DEFAULT_CONFIG)
 		if err != nil {
 			return nil, err
 		}
@@ -42,6 +44,14 @@ func Suites() ([]*Suite, error) {
 	}
 
 	for _, s := range suites {
+		if len(s.Dirs) == 0 {
+			return nil, ErrNoDirProvided
+		}
+
+		if s.Src == "" || s.Dest == "" {
+			return nil, ErrNoSrcOrDest
+		}
+
 		if err = AbsPaths(s); err != nil {
 			return nil, err
 		}
@@ -98,24 +108,31 @@ func (s *Suite) Exec() error {
 		c.Dir = s.Root
 		cmds = append(cmds, c)
 	}
+
 	r, err := os.Open(s.Src)
 	if err != nil {
 		return err
 	}
+	defer r.Close()
+
 	w, err := os.OpenFile(s.Dest, os.O_WRONLY, 0666)
 	if err != nil {
 		return err
 	}
+	defer w.Close()
+
 	return Pipe(r, w, cmds...)
 }
 
 func (s *Suite) Transmitter() (*sniffy.EventTransmitter, error) {
-	if len(s.Dirs) == 0 {
-		return nil, ErrNoDirProvided
-	}
 	var filters []sniffy.Filter
 
-	filters = append(filters, sniffy.PathFilter(s.Dirs...))
+	filters = append(
+		filters,
+		sniffy.ExcludeChildFilter(s.Dirs...),
+		sniffy.ExcludePathFilter(s.Dest),
+		sniffy.TooSoonFilter(time.Second),
+	)
 
 	if len(s.Exts) > 0 {
 		filters = append(filters, sniffy.ExtFilter(s.Exts...))

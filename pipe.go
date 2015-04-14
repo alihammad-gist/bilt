@@ -13,10 +13,10 @@ func Pipe(r io.Reader, w io.Writer, cmds ...*exec.Cmd) error {
 			if stdout, err := lcmd.StdoutPipe(); err == nil {
 				cmd.Stdin = stdout
 			} else {
-				return err
+				errlogger.Fatal(err)
 			}
 			if err := lcmd.Start(); err != nil {
-				return err
+				errlogger.Fatal(err)
 			}
 		} else {
 			cmd.Stdin = r
@@ -26,12 +26,12 @@ func Pipe(r io.Reader, w io.Writer, cmds ...*exec.Cmd) error {
 
 	lcmd.Stdout = w
 	if err := lcmd.Start(); err != nil {
-		return err
+		errlogger.Fatal(err)
 	}
 
 	for _, cmd := range cmds {
 		if err := cmd.Wait(); err != nil {
-			return err
+			errlogger.Fatal(err)
 		}
 	}
 

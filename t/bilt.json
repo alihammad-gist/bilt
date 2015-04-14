@@ -1,9 +1,9 @@
 [
 	{
-		"root": "/home/ali/golang/src/github.com/alihammad-gist/bilt/t/watchme",
+		"root": "/home/ali/Dev/golang/src/github.com/alihammad-gist/bilt/t/watchme",
 		"dirs": ["."],
 		"exts": [".css", ".txt"],
-		"cmds": ["cat"],
+		"cmds": ["cat", "grep asd"],
 		"src" : "src.txt",
 		"dest": "dest.txt"
 	}

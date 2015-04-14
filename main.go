@@ -2,8 +2,13 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"github.com/alihammad-gist/sniffy"
+)
+
+const (
+	DEFAULT_CONFIG = "bilt.json"
 )
 
 type (
@@ -18,10 +23,20 @@ type (
 	}
 )
 
+var (
+	errlogger *log.Logger
+	evlogger  *log.Logger
+)
+
+func init() {
+	errlogger = log.New(os.Stderr, "!  ", log.Lshortfile)
+	evlogger = log.New(os.Stdout, "-> ", log.Ltime)
+}
+
 func main() {
 	suites, err := Suites()
 	if err != nil {
-		log.Fatal(err)
+		errlogger.Fatal(err)
 	}
 
 	// getting EventTransmitters
@@ -30,13 +45,13 @@ func main() {
 	for _, s := range suites {
 		t, err := s.Transmitter()
 		if err != nil {
-			log.Fatal(err)
+			errlogger.Fatal(err)
 		}
 		go func() {
 			for e := range t.Events {
-				log.Println(e)
+				evlogger.Println(e)
 				if err := s.Exec(); err != nil {
-					log.Println(err)
+					errlogger.Println(err)
 				}
 			}
 		}()
@@ -45,13 +60,13 @@ func main() {
 
 	w, err := sniffy.NewWatcher(trans...)
 	if err != nil {
-		log.Fatal(err)
+		errlogger.Println(err)
 	}
 
 	// watching for errors
 	go func() {
 		for err := range w.Errors {
-			log.Println(err)
+			errlogger.Println(err)
 		}
 	}()
 
@@ -59,7 +74,7 @@ func main() {
 		for _, d := range s.Dirs {
 			err = w.AddDir(d)
 			if err != nil {
-				log.Fatal(err)
+				errlogger.Println(err)
 			}
 		}
 	}
