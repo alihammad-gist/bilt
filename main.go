@@ -1,14 +1,9 @@
 package main
 
 import (
-	"errors"
 	"log"
 
 	"github.com/alihammad-gist/sniffy"
-)
-
-var (
-	ErrNoDirProvided = errors.New("Suite doesn't have any directories")
 )
 
 type (
@@ -23,27 +18,8 @@ type (
 	}
 )
 
-/*
-[
-	{
-		"dirs": ["/path/to/dir", "/home/ali"],
-		"exts": [".php", ".css"],
-		"cmds": ["browserify"],
-		"src" : "main.js",
-		"dest": "dest.js"
-	},
-	{
-		"dirs": ["/", "/usr"],
-		"exts": [".bat", ".bin"],
-		"cmds": ["cat"],
-		"src" : "main.sh",
-		"dest": "dest.sh"
-	}
-]
-*/
-
 func main() {
-	suites, err := getSuites()
+	suites, err := Suites()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -58,6 +34,7 @@ func main() {
 		}
 		go func() {
 			for e := range t.Events {
+				log.Println(e)
 				if err := s.Exec(); err != nil {
 					log.Println(err)
 				}
@@ -65,4 +42,28 @@ func main() {
 		}()
 		trans = append(trans, t)
 	}
+
+	w, err := sniffy.NewWatcher(trans...)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// watching for errors
+	go func() {
+		for err := range w.Errors {
+			log.Println(err)
+		}
+	}()
+
+	for _, s := range suites {
+		for _, d := range s.Dirs {
+			err = w.AddDir(d)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+	}
+
+	done := make(chan bool)
+	<-done
 }

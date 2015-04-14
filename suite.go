@@ -1,6 +1,9 @@
 package main
 
 import (
+	"encoding/json"
+	"errors"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -9,33 +12,62 @@ import (
 	"github.com/alihammad-gist/sniffy"
 )
 
+var (
+	ErrNoDirProvided = errors.New("Suite doesn't have any directories")
+)
+
 // Looks if config file is passed as argument in the command-line
 // or if it is present in current working directory
-func Suites() []*Suite {
-	var suites []*Suite
-	// Turn paths to absolute paths include Suite.Src and Suite.Dest
+func Suites() ([]*Suite, error) {
+	var (
+		suites []*Suite
+		d      []byte
+		err    error
+	)
+
+	if len(os.Args) == 2 {
+		d, err = ioutil.ReadFile(os.Args[1])
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		d, err = ioutil.ReadFile("bilt.json")
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if err = json.Unmarshal(d, &suites); err != nil {
+		return nil, err
+	}
 
 	for _, s := range suites {
-
+		if err = AbsPaths(s); err != nil {
+			return nil, err
+		}
 	}
+
+	return suites, nil
 }
 
+// Absolutizes paths inside a suite
 func AbsPaths(s *Suite) error {
+
 	// Watch paths
 	var (
 		p   string
 		err error
 	)
-	for i, _ := range dirs {
-		p = dirs[i]
+	for i, _ := range s.Dirs {
+		p = s.Dirs[i]
 		if !filepath.IsAbs(p) {
 			if s.Root == "" {
-				dirs[i], err = filepath.Abs(p)
+				s.Dirs[i], err = filepath.Abs(p)
 				if err != nil {
 					return err
 				}
 			} else {
-				dirs[i] = filepath.Join(s.Root, p)
+				s.Dirs[i] = filepath.Join(s.Root, p)
 			}
 		}
 	}
@@ -54,12 +86,14 @@ func AbsPaths(s *Suite) error {
 		s.Src = filepath.Join(s.Root, s.Src)
 		s.Dest = filepath.Join(s.Root, s.Dest)
 	}
+
+	return nil
 }
 
 func (s *Suite) Exec() error {
 	var cmds []*exec.Cmd
 	for _, cstr := range s.Cmds {
-		cparts := strings.Split(cstr)
+		cparts := strings.Split(cstr, " ")
 		c := exec.Command(cparts[0], cparts[1:]...)
 		c.Dir = s.Root
 		cmds = append(cmds, c)
@@ -86,5 +120,5 @@ func (s *Suite) Transmitter() (*sniffy.EventTransmitter, error) {
 	if len(s.Exts) > 0 {
 		filters = append(filters, sniffy.ExtFilter(s.Exts...))
 	}
-	return &sniffy.Transmitter(filters...), nil
+	return sniffy.Transmitter(filters...), nil
 }

@@ -1,0 +1,10 @@
+[
+	{
+		"root": "/home/ali/golang/src/github.com/alihammad-gist/bilt/t/watchme",
+		"dirs": ["."],
+		"exts": [".css", ".txt"],
+		"cmds": ["cat"],
+		"src" : "src.txt",
+		"dest": "dest.txt"
+	}
+]
