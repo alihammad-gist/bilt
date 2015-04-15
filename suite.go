@@ -133,7 +133,7 @@ func (s *Suite) Transmitter() (*sniffy.EventTransmitter, error) {
 
 	filters = append(
 		filters,
-		sniffy.ExcludeChildFilter(s.Dirs...),
+		sniffy.ChildFilter(s.Dirs...),
 		sniffy.ExcludePathFilter(s.Dest),
 		sniffy.TooSoonFilter(time.Second),
 	)
