@@ -96,6 +96,13 @@ func AbsPaths(s *Suite) error {
 			return err
 		}
 		s.Dest = filepath.Join(pwd, s.Dest)
+
+		// setting root for CMD
+		if rt, err := os.Getwd(); err != nil {
+			errlogger.Fatal(err)
+		} else {
+			s.Root = rt
+		}
 	} else {
 		s.Src = filepath.Join(s.Root, s.Src)
 		s.Dest = filepath.Join(s.Root, s.Dest)
@@ -113,6 +120,11 @@ func (s *Suite) Exec() error {
 		cmds = append(cmds, c)
 	}
 
+	// check if src file is present
+	if _, err := os.Stat(s.Src); os.IsNotExist(err) {
+		errlogger.Fatalf("no such file or directory: %s", s.Src)
+	}
+
 	r, err := os.Open(s.Src)
 	if err != nil {
 		return err
@@ -125,7 +137,7 @@ func (s *Suite) Exec() error {
 	}
 	defer w.Close()
 
-	return Pipe(r, w, cmds...)
+	return Pipe(r, w, os.Stderr, cmds...)
 }
 
 func (s *Suite) Transmitter() (*sniffy.EventTransmitter, error) {

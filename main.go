@@ -49,10 +49,11 @@ func main() {
 		}
 		go func() {
 			for e := range t.Events {
-				evlogger.Println(e)
+				evlogger.Println(e.Name)
 				if err := s.Exec(); err != nil {
 					errlogger.Println(err)
 				}
+				evlogger.Println("Exec Done (", s.Label, ")")
 			}
 		}()
 		trans = append(trans, t)
@@ -74,7 +75,7 @@ func main() {
 		for _, d := range s.Dirs {
 			err = w.AddDir(d)
 			if err != nil {
-				errlogger.Println(err)
+				errlogger.Println(err, d)
 			}
 		}
 	}

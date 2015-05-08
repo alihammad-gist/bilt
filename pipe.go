@@ -10,7 +10,8 @@ var (
 	ErrNoCommandsProvided = errors.New("No commands were provided")
 )
 
-func Pipe(in io.Reader, out io.Writer, cmds ...*exec.Cmd) error {
+func Pipe(in io.Reader, out io.Writer, errWriter io.Writer, cmds ...*exec.Cmd) error {
+
 	if len(cmds) == 0 {
 		return ErrNoCommandsProvided
 	}
@@ -27,6 +28,7 @@ func Pipe(in io.Reader, out io.Writer, cmds ...*exec.Cmd) error {
 			}
 			cmds[i].Stdin = pout
 		}
+		cmds[i].Stderr = errWriter
 	}
 
 	// starting
