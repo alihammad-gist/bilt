@@ -24,8 +24,9 @@ type (
 )
 
 var (
-	errlogger *log.Logger
-	evlogger  *log.Logger
+	errlogger    *log.Logger
+	evlogger     *log.Logger
+	runSuiteChan chan *Suite
 )
 
 func init() {
@@ -34,6 +35,7 @@ func init() {
 }
 
 func main() {
+	runSuiteChan = make(chan *Suite)
 	suites, err := Suites()
 	if err != nil {
 		errlogger.Fatal(err)
@@ -50,10 +52,7 @@ func main() {
 		go func() {
 			for e := range t.Events {
 				evlogger.Println(e.Name)
-				if err := s.Exec(); err != nil {
-					errlogger.Println(err)
-				}
-				evlogger.Println("Exec Done (", s.Label, ")")
+				runSuiteChan <- s
 			}
 		}()
 		trans = append(trans, t)
@@ -71,6 +70,19 @@ func main() {
 		}
 	}()
 
+	// watching for suites
+	go func() {
+		for s := range runSuiteChan {
+			if err := s.Exec(); err != nil {
+				errlogger.Println(err)
+			} else {
+				// Todo livereload
+			}
+			evlogger.Println("Exec Done (", s.Label, ")")
+		}
+	}()
+
+	// adding dirs
 	for _, s := range suites {
 		for _, d := range s.Dirs {
 			err = w.AddDir(d)
