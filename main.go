@@ -4,34 +4,56 @@ import (
 	"log"
 	"os"
 
+	"github.com/jaschaephraim/lrserver"
+
 	"github.com/alihammad-gist/sniffy"
 )
 
 const (
 	DEFAULT_CONFIG = "bilt.json"
+
+	LIVERLD_EVENT = "?updated"
+	LIVERLD_DEST  = "?dest"
 )
 
 type (
 	Suite struct {
-		Dirs  []string `json:"dirs"`
-		Exts  []string `json:"exts"`
-		Root  string   `json:"root"`
-		Cmds  []string `json:"cmds"`
-		Src   string   `json:"src"`
-		Dest  string   `json:"dest"`
-		Label string   `json:"label"`
+		Dirs    []string `json:"dirs"`
+		Exts    []string `json:"exts"`
+		Root    string   `json:"root"`
+		Cmds    []string `json:"cmds"`
+		Src     string   `json:"src"`
+		Dest    string   `json:"dest"`
+		Label   string   `json:"label"`
+		LiveRld string   `json:"liveReload"`
+
+		trans *sniffy.EventTransmitter
 	}
 )
 
 var (
 	errlogger    *log.Logger
 	evlogger     *log.Logger
+	liveRld      *lrserver.Server
 	runSuiteChan chan *Suite
 )
 
 func init() {
-	errlogger = log.New(os.Stderr, "!  ", log.Lshortfile)
-	evlogger = log.New(os.Stdout, "-> ", log.Ltime)
+	var err error
+	errlogger = log.New(os.Stderr, "[Error]  ", log.Lshortfile)
+	evlogger = log.New(os.Stdout, "[BILT] ", log.Ltime)
+
+	// live reload server
+	liveRld, err = lrserver.New(lrserver.DefaultName, lrserver.DefaultPort)
+	if err != nil {
+		errlogger.Fatal(err)
+	}
+
+	go func() {
+		if err = liveRld.ListenAndServe(); err != nil {
+			errlogger.Fatal(err)
+		}
+	}()
 }
 
 func main() {
@@ -76,7 +98,7 @@ func main() {
 			if err := s.Exec(); err != nil {
 				errlogger.Println(err)
 			} else {
-				// Todo livereload
+				s.Publish(liveRld)
 			}
 			evlogger.Println("Exec Done (", s.Label, ")")
 		}
