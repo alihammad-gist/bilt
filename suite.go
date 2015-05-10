@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jaschaephraim/lrserver"
+
 	"github.com/alihammad-gist/sniffy"
 )
 
@@ -141,6 +143,10 @@ func (s *Suite) Exec() error {
 }
 
 func (s *Suite) Transmitter() (*sniffy.EventTransmitter, error) {
+	if s.trans != nil {
+		return s.trans, nil
+	}
+
 	var filters []sniffy.Filter
 
 	filters = append(
@@ -153,5 +159,18 @@ func (s *Suite) Transmitter() (*sniffy.EventTransmitter, error) {
 	if len(s.Exts) > 0 {
 		filters = append(filters, sniffy.ExtFilter(s.Exts...))
 	}
-	return sniffy.Transmitter(filters...), nil
+	s.trans = sniffy.Transmitter(filters...)
+	return s.trans, nil
+}
+
+func (s *Suite) Publish(lr *lrserver.Server) {
+	switch s.LiveRld {
+	case LIVERLD_DEST:
+		lr.Reload(s.Dest)
+
+	case LIVERLD_EVENT:
+		lr.Reload(
+			s.trans.LastEvent().Name,
+		)
+	}
 }
