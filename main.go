@@ -73,7 +73,11 @@ func main() {
 		}
 		go func() {
 			for e := range t.Events {
-				evlogger.Println(e.Name)
+				i := e.Name
+				if len(e.Name) > 50 {
+					i = "..." + e.Name[len(e.Name)-47:]
+				}
+				evlogger.Println(i)
 				runSuiteChan <- s
 			}
 		}()

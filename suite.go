@@ -149,16 +149,18 @@ func (s *Suite) Transmitter() (*sniffy.EventTransmitter, error) {
 
 	var filters []sniffy.Filter
 
+	if len(s.Exts) > 0 {
+		filters = append(filters, sniffy.ExtFilter(s.Exts...))
+	}
+
 	filters = append(
 		filters,
 		sniffy.ChildFilter(s.Dirs...),
 		sniffy.ExcludePathFilter(s.Dest),
+		sniffy.IgnoreFnPatternFilter(".??[^.]*"),
 		sniffy.TooSoonFilter(time.Second),
 	)
 
-	if len(s.Exts) > 0 {
-		filters = append(filters, sniffy.ExtFilter(s.Exts...))
-	}
 	s.trans = sniffy.Transmitter(filters...)
 	return s.trans, nil
 }
