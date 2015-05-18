@@ -71,16 +71,16 @@ func main() {
 		if err != nil {
 			errlogger.Fatal(err)
 		}
-		go func() {
+		go func(st *Suite) {
 			for e := range t.Events {
 				i := e.Name
 				if len(e.Name) > 50 {
 					i = "..." + e.Name[len(e.Name)-47:]
 				}
 				evlogger.Println(i)
-				runSuiteChan <- s
+				runSuiteChan <- st
 			}
-		}()
+		}(s)
 		trans = append(trans, t)
 	}
 
